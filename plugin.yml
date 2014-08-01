@@ -1,0 +1,5 @@
+name: EnderCrates
+main: com.gipsyking.EnderCrates.EnderCrates
+version: 1.0
+description: Allows players to use make "crate" items from Ender Chests
+author: gipsyking
