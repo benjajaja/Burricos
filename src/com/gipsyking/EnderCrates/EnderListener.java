@@ -36,7 +36,7 @@ public class EnderListener implements Listener{
 	
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
 	public void blockPlaceEvent(BlockPlaceEvent event) {
-		if (event.getBlock().getType() != Material.ENDER_CHEST) return;
+		if (event.getBlock().getType() != Material.CHEST) return;
 		
 		ih.restore(event.getBlock(), event.getItemInHand());
 	}
