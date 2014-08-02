@@ -8,17 +8,13 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.ReinforcementManager;
 
 public class EnderListener implements Listener{
 
 	private InventoryHandler ih;
-	private ReinforcementManager rm;
 	
 	public EnderListener(InventoryHandler ih){
 		this.ih = ih;
-		rm = Citadel.getReinforcementManager();
 	}
 	
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
@@ -26,6 +22,7 @@ public class EnderListener implements Listener{
 		if (event.getClickedBlock() == null || event.getClickedBlock().getType() != Material.ENDER_CHEST
 				|| event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
+		event.setCancelled(true);
 		ih.openInventory(event.getPlayer(), event.getClickedBlock());
 	}
 	
@@ -36,7 +33,7 @@ public class EnderListener implements Listener{
 	
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
 	public void blockPlaceEvent(BlockPlaceEvent event) {
-		if (event.getBlock().getType() != Material.CHEST) return;
+		if (event.isCancelled() || event.getBlock().getType() != Material.CHEST) return;
 		
 		ih.restore(event.getBlock(), event.getItemInHand());
 	}

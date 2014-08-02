@@ -29,7 +29,7 @@ public class InventoryHandler {
 				return;
 			}
 		}
-		Inventory inventory = plugin.getServer().createInventory(player, InventoryType.ENDER_CHEST);
+		Inventory inventory = plugin.getServer().createInventory(player, 27, "Make crate");
 		InventoryView view = player.openInventory(inventory);
 		inventories.add(new CrateInventory(inventory, view, block, player));
 	}
@@ -37,19 +37,31 @@ public class InventoryHandler {
 	public void saveInventory(InventoryView inventoryView) {
 		CrateInventory crate = getCrate(inventoryView);
 		if (crate != null) {
+			if (crate.block.getType() != Material.ENDER_CHEST) {
+				returnItems(crate);
+				return;
+			}
 			for (ItemStack stack: crate.inventory.getContents()) {
 				if (stack != null) {
 					drop(crate);
 					return;
 				}
 			}
-			dropNew(crate);
+		}
+		
+	}
+
+	private void returnItems(CrateInventory crate) {
+		for (ItemStack stack: crate.inventory.getContents()) {
+			if (stack != null) {
+				crate.block.getWorld().dropItemNaturally(crate.block.getLocation(), stack);
+			}
 		}
 		
 	}
 
 	private CrateInventory getCrate(InventoryView view) {
-		if (view.getType() != InventoryType.ENDER_CHEST) {
+		if (view.getType() != InventoryType.CHEST) {
 			return null;
 		}
 		logger.info("searching " + inventories.size() + " currently open inventories for crate");
@@ -69,13 +81,18 @@ public class InventoryHandler {
 	private void dropCrate(CrateInventory crate, ItemStack stack) {
 		crate.block.getWorld().dropItemNaturally(crate.block.getLocation(), stack);
 		crate.block.setType(Material.AIR);
+//		crate.block.breakNaturally(stack);
 	}
 	
 	private void drop(CrateInventory crate) {
+		for (ItemStack stack: crate.inventory.getContents()) {
+			if (stack != null && stack.getType() == Material.CHEST &&
+					stack.getItemMeta() != null && stack.getItemMeta().getDisplayName() != null &&
+					stack.getItemMeta().getDisplayName().equals("Crate")) {
+				returnItems(crate);
+				return;
+			}
+		}
 		dropCrate(crate, NMSWrapper.crateItem(crate.inventory));
-	}
-
-	private void dropNew(CrateInventory crate) {
-		dropCrate(crate, NMSWrapper.emptyCrateItem());
 	}
 }
