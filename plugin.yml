@@ -1,5 +1,5 @@
-name: EnderCrates
-main: com.gipsyking.EnderCrates.EnderCrates
+name: Burricos
+main: com.gipsyking.Burricos.Burricos
 version: 1.0
-description: Allows players to use make "crate" items from Ender Chests
+description: Allows larger donkey inventories when using a crate item with special lore "Donkey double chest"
 author: gipsyking
