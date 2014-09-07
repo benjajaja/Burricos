@@ -3,8 +3,14 @@ package com.gipsyking.EnderCrates;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
+import net.minecraft.server.v1_7_R1.EntityHorse;
+import net.minecraft.server.v1_7_R1.EntityPlayer;
+import net.minecraft.server.v1_7_R1.InventoryLargeChest;
+
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.craftbukkit.v1_7_R1.entity.CraftPlayer;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
@@ -29,7 +35,7 @@ public class InventoryHandler {
 				return;
 			}
 		}
-		Inventory inventory = plugin.getServer().createInventory(player, 27, "Make crate");
+		Inventory inventory = plugin.getServer().createInventory(player, 9, "Make crate");
 		InventoryView view = player.openInventory(inventory);
 		inventories.add(new CrateInventory(inventory, view, block, player));
 	}
@@ -94,5 +100,15 @@ public class InventoryHandler {
 			}
 		}
 		dropCrate(crate, NMSWrapper.crateItem(crate.inventory));
+	}
+
+	public void openHorseInventory(HumanEntity player, EntityHorse horse) {
+		 
+//		Inventory inventory = plugin.getServer().createInventory(player, horse.inventoryChest.getSize(), "Donkey");
+		
+		
+//		.openInventory((Inventory) horse.inventoryChest);
+		
+		
 	}
 }

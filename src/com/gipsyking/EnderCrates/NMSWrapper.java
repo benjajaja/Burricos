@@ -39,8 +39,33 @@ public class NMSWrapper {
 		//tileEntityChest.a("");
 		
 	}
+	
+	public static void unzip(ItemStack itemStack, Inventory inventory) {
+		net.minecraft.server.v1_7_R1.ItemStack nmsHandStack = CraftItemStack.asNMSCopy(itemStack);
+		NBTTagCompound tag = nmsHandStack.getTag();
+		if (tag == null || !tag.hasKey("contents")) {
+			return;
+		}
+		
+		nmsHandStack.setTag(null);
+		
+		NBTTagList contents = tag.getList("contents", 10);
+		
+		for (int i = 0; i < contents.size(); i++) {
+			NBTTagCompound itemTag = contents.get(i);
+			
+			net.minecraft.server.v1_7_R1.ItemStack nmsStack = net.minecraft.server.v1_7_R1.ItemStack.createStack(itemTag);
+
+			inventory.addItem(CraftItemStack.asCraftMirror(nmsStack));
+		}
+		
+	}
 
 	public static ItemStack crateItem(Inventory inventory) {
+		return crateItem(inventory.getContents());
+	}
+	
+	public static ItemStack crateItem(ItemStack[] stacks) {
 		net.minecraft.server.v1_7_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(new ItemStack(Material.CHEST));
 		NBTTagCompound tag = new NBTTagCompound();
 		nmsStack.setTag(tag);
@@ -51,7 +76,7 @@ public class NMSWrapper {
 		
 		NBTTagList contents = new NBTTagList();
 		
-		for (ItemStack invStack: inventory.getContents()) {
+		for (ItemStack invStack: stacks) {
 			if (invStack == null) {
 				continue;
 			}
