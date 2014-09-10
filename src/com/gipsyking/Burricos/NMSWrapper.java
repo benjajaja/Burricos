@@ -1,19 +1,19 @@
 package com.gipsyking.Burricos;
 
 // all the cancer, at least it's in one place
-import net.minecraft.server.v1_7_R1.EntityHorse;
-import net.minecraft.server.v1_7_R1.IInventoryListener;
-import net.minecraft.server.v1_7_R1.InventoryHorseChest;
-import net.minecraft.server.v1_7_R1.InventorySubcontainer;
-import net.minecraft.server.v1_7_R1.NBTTagCompound;
-import net.minecraft.server.v1_7_R1.NBTTagList;
-import net.minecraft.server.v1_7_R1.NBTTagString;
-import net.minecraft.server.v1_7_R1.ItemStack;
+import net.minecraft.server.v1_7_R4.EntityHorse;
+import net.minecraft.server.v1_7_R4.IInventoryListener;
+import net.minecraft.server.v1_7_R4.InventoryHorseChest;
+import net.minecraft.server.v1_7_R4.InventorySubcontainer;
+import net.minecraft.server.v1_7_R4.NBTTagCompound;
+import net.minecraft.server.v1_7_R4.NBTTagList;
+import net.minecraft.server.v1_7_R4.NBTTagString;
+import net.minecraft.server.v1_7_R4.ItemStack;
 
-import org.bukkit.craftbukkit.v1_7_R1.entity.CraftHorse;
-import org.bukkit.craftbukkit.v1_7_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_7_R1.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_7_R1.util.CraftMagicNumbers;
+import org.bukkit.craftbukkit.v1_7_R4.entity.CraftHorse;
+import org.bukkit.craftbukkit.v1_7_R4.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_7_R4.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_7_R4.util.CraftMagicNumbers;
 import org.bukkit.Material;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
@@ -99,7 +99,7 @@ public class NMSWrapper {
 		boolean isSaddled = item != null && CraftMagicNumbers.getId(item.getItem()) == 329;
 		
 		// handle.cs(): is saddled?
-		if (isSaddled && !handle.cs() && handle.ticksLived > 20) {
+		if (isSaddled && !handle.cu() && handle.ticksLived > 20) {
 			handle.makeSound("mob.horse.leather", 0.5F, 1.0F);
 		}
 		// handle.n(boolean): set saddled
