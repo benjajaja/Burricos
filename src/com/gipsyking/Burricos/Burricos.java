@@ -128,17 +128,6 @@ public class Burricos extends JavaPlugin implements Listener{
 			}
 		}
 	}
-	
-	@EventHandler(priority = EventPriority.LOWEST)
-	public void onDisallowVehicleLogout(PlayerQuitEvent event) {
-		// this should be handled by Humbug just like it does with minecarts
-		Player player = event.getPlayer();
-	    Entity vehicle = player.getVehicle();
-	    if (vehicle == null || !(vehicle instanceof Horse)) {
-	      return;
-	    }
-	    player.leaveVehicle();
-	}
 
 	public static void saveDonkeyZip(Horse horse) {
 		ItemStack crate = NMSWrapper.zip(horse.getInventory().getContents());
