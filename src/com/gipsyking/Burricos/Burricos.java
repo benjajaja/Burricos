@@ -12,7 +12,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.HorseInventory;
@@ -23,25 +22,43 @@ public class Burricos extends JavaPlugin implements Listener{
 	
 	static Logger logger;
 	
-	private static final int ZIP_SLOT = 2;
-	public static final String ZIP_LORE = "Donkey.zip";
+	private static final int ZIP_SLOT = 2; // slots 0 and 1 are saddle and armor, 2 is the first normal slot
+	public static final String ZIP_LORE = "Donkey.zip"; // a player should never get to see this, but just in case
+	public static final String UPGRADE_ITEM_LORE = "Donkey double chest";
 
 	public void onEnable(){
 		Burricos.logger = getLogger();
 		this.getServer().getPluginManager().registerEvents(this, this);
+		
+		// there may be chunks and entities loaded at this time and on top of that the may *never* fire ChunkLoadEvent (spawn area)
+		int count = 0;
+		for (World world: this.getServer().getWorlds()) {
+			for (Horse horse: world.getEntitiesByClass(Horse.class)) {
+				if (horse.isCarryingChest()) {
+					if (unzip(horse)) {
+						count++;
+					}
+				}
+			}
+		}
+		if (count > 0) {
+			logger.info("Unzipped " + count + " donkey inventories");
+		}
 	}
 	
 	public void onDisable() {
 		int count = 0;
+		// if the server crashes hard then donkey inv is partially lost (starting from slot 17), no way around that
 		for (World world: this.getServer().getWorlds()) {
 			for (Horse horse: world.getEntitiesByClass(Horse.class)) {
-				if (horse.isCarryingChest() && horse.getInventory().getSize() == 54) {
-					Burricos.saveDonkeyZip(horse);
+				if (zip(horse)) {
 					count++;
 				}
 			}
 		}
-		logger.info("Zipped " + count + " donkey inventories");
+		if (count > 0) {
+			logger.info("Zipped " + count + " donkey inventories");
+		}
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL)
@@ -54,43 +71,53 @@ public class Burricos extends JavaPlugin implements Listener{
 		Horse horse = (Horse) event.getInventory().getHolder();
 		
 		if (horse.getInventory().getSize() != 54) {
-			// it's not an upgraded donkey
+			// it's not an upgraded donkey, return but check if needs unzipping
+			if (unzip(horse)) {
+				// this could happen if Humbug does not kick a player off a donkey for some reason (anything but PlayerQuitEvent: server stop for example)
+				logger.warning(event.getPlayer().getName() + " tried to open a zipped donkey, unzipped donkey and cancelled event");
+				event.setCancelled(true);
+			}
 			return;
 		}
 		
 		event.setCancelled(true);
+		// sadly, this will do nothing while riding a donkey:
 		NMSWrapper.openDonkeyContainer((Player) event.getPlayer(), horse);
 	}
 	
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void setDonkeyDoubleChestEvent(PlayerInteractEntityEvent event) {
-		if (!(event.getRightClicked() instanceof Horse) || event.getPlayer().getItemInHand().getType() != Material.CHEST) {
+		if (!(event.getRightClicked() instanceof Horse)) {
+			return;
+		}
+		Horse horse = (Horse) event.getRightClicked();
+		if (!horse.isTamed() || horse.isCarryingChest()) {
 			return;
 		}
 		
 		ItemStack chestItem = event.getPlayer().getItemInHand();
-		if (chestItem.getItemMeta().getLore() == null
+		if (chestItem.getType() != Material.CHEST
+				|| chestItem.getItemMeta().getLore() == null
 				|| chestItem.getItemMeta().getLore().size() != 1
-				|| !chestItem.getItemMeta().getLore().get(0).equals("Donkey double chest")) {
+				|| !chestItem.getItemMeta().getLore().get(0).equals(UPGRADE_ITEM_LORE)) {
 			// must be used with a chest with exactly that lore, from a Factory or something
 			return;
 		}
 		
-		Horse horse = (Horse) event.getRightClicked();
-		if (!horse.isCarryingChest()) {
-			event.setCancelled(true);
-			horse.setCarryingChest(true);
-			event.getPlayer().getItemInHand().setAmount(event.getPlayer().getItemInHand().getAmount() - 1);
-			
-			HorseInventory inventory = horse.getInventory();
-			NMSWrapper.setLargeDonkeyChest(horse);
-			for (int i = 0; i < inventory.getSize(); i++) {
-				if (inventory.getItem(i) != null) {
-					horse.getInventory().setItem(i, inventory.getItem(i).clone());
-				}
+		
+		event.setCancelled(true);
+		horse.setCarryingChest(true);
+		chestItem.setAmount(chestItem.getAmount() - 1);
+		
+		HorseInventory inventory = horse.getInventory();
+		NMSWrapper.setLargeDonkeyChest(horse);
+		// copy items over, if donkey already had some
+		for (int i = 0; i < inventory.getSize(); i++) {
+			if (inventory.getItem(i) != null) {
+				horse.getInventory().setItem(i, inventory.getItem(i).clone());
 			}
-			inventory.clear(); // could another player be looking at the old inventory view?
 		}
+		inventory.clear(); // just in case, could another player be looking at the old inventory?
 	}
 	
 	@EventHandler(priority = EventPriority.NORMAL)
@@ -99,22 +126,10 @@ public class Burricos extends JavaPlugin implements Listener{
 			if (entity instanceof Horse) {
 				Horse horse = (Horse) entity;
 				if (horse.isCarryingChest()) {
-					ItemStack zip = horse.getInventory().getItem(ZIP_SLOT);
-					if (this.isZipItem(zip)) {
-						NMSWrapper.setLargeDonkeyChest(horse);
-						NMSWrapper.unzip(zip, horse.getInventory());
-					}
+					unzip(horse);
 				}
 			}
 		}
-	}
-
-	private boolean isZipItem(ItemStack zip) {
-		return zip != null
-				&& zip.getItemMeta() != null
-				&& zip.getItemMeta().getLore() != null
-				&& zip.getItemMeta().getLore().size() == 1
-				&& zip.getItemMeta().getLore().get(0).equals(ZIP_LORE);
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL)
@@ -123,15 +138,33 @@ public class Burricos extends JavaPlugin implements Listener{
 			if (entity instanceof Horse) {
 				Horse horse = (Horse) entity;
 				if (horse.isCarryingChest() && horse.getInventory().getSize() == 54) {
-					Burricos.saveDonkeyZip(horse);
+					zip(horse);
 				}
 			}
 		}
 	}
 
-	public static void saveDonkeyZip(Horse horse) {
-		ItemStack crate = NMSWrapper.zip(horse.getInventory().getContents());
-		NMSWrapper.unsetLargeDonkeyChest(horse);
-		horse.getInventory().setItem(ZIP_SLOT, crate);
+	private boolean zip(Horse horse) {
+		if (horse.isCarryingChest() && horse.getInventory().getSize() == 54) {
+			ItemStack contents = NMSWrapper.zip(horse.getInventory().getContents());
+			NMSWrapper.unsetLargeDonkeyChest(horse);
+			horse.getInventory().setItem(ZIP_SLOT, contents);
+			return true;
+		}
+		return false;
+	}
+
+	private boolean unzip(Horse horse) {
+		ItemStack zip = horse.getInventory().getItem(ZIP_SLOT);
+		if (zip != null
+				&& zip.getItemMeta() != null
+				&& zip.getItemMeta().getLore() != null
+				&& zip.getItemMeta().getLore().size() == 1
+				&& zip.getItemMeta().getLore().get(0).equals(ZIP_LORE)) {
+			NMSWrapper.setLargeDonkeyChest(horse);
+			NMSWrapper.unzip(zip, horse.getInventory());
+			return true;
+		}
+		return false;
 	}
 }

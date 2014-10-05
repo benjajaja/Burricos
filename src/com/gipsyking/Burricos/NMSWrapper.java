@@ -107,7 +107,7 @@ public class NMSWrapper {
 	}
 
 	public static void unsetLargeDonkeyChest(Horse horse) {
-		horse.getInventory().clear(); // just in case
+		horse.getInventory().clear(); // just in case, could another player be looking at the old inventory?
 		
 		EntityHorse handle = ((CraftHorse)horse).getHandle();
 		handle.inventoryChest = null; // loadChest needs this
