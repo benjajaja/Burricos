@@ -22,6 +22,9 @@ import org.bukkit.inventory.Inventory;
 
 public class NMSWrapper {
 
+	/**
+	 * "zip" an inventory array into the NBT of a single item.
+	 */
 	public static org.bukkit.inventory.ItemStack zip(org.bukkit.inventory.ItemStack[] stacks) {
 		ItemStack nmsStack = CraftItemStack.asNMSCopy(new org.bukkit.inventory.ItemStack(Material.CHEST));
 		NBTTagCompound tag = new NBTTagCompound();
@@ -50,6 +53,9 @@ public class NMSWrapper {
 		return CraftItemStack.asCraftMirror(nmsStack);
 	}
 
+	/**
+	 * Unzip a "zip" item into an inventory
+	 */
 	public static void unzip(org.bukkit.inventory.ItemStack itemStack, Inventory inventory) {
 		ItemStack nmsItemStack = CraftItemStack.asNMSCopy(itemStack);
 		if (nmsItemStack == null) {
@@ -76,15 +82,24 @@ public class NMSWrapper {
 		
 	}
 
+	/**
+	 * Open a custom view of a horse inventory to the player, to show a simple
+	 * inventory view instead of the custom horse UI.
+	 */
 	public static void openDonkeyContainer(Player player, Horse horse) {
 		((CraftPlayer)player).getHandle().openContainer(((CraftHorse)horse).getHandle().inventoryChest);
 	}
 
+	/**
+	 * Replace horse's inventory reference with a new larger inventory.
+	 * Add a listener to saddle it when a saddle is placed in first slot.
+	 */
 	public static void setLargeDonkeyChest(Horse horse) {
 		final EntityHorse handle = ((CraftHorse)horse).getHandle();
 		handle.inventoryChest = new InventoryHorseChest("Burrico", 54, handle);
 		
-		// normal horse invs trust their custom view to only allow saddles for 1st slot, we don't:
+		// normal horse invs trust their custom view to only allow saddles for 1st slot, we don't.
+		// add an inventory listener that sets "saddled" state depending on if first item is a saddle.
 		handle.inventoryChest.a(new IInventoryListener() {
 			
 			@Override
@@ -94,11 +109,16 @@ public class NMSWrapper {
 		});
 	}
 
+	/**
+	 * Set horse to be saddled if first slot is saddle.
+	 * Play sound if it wasn't saddled before and was loaded for at least a second.
+	 */
 	private static void setSaddled(EntityHorse handle) {
 		ItemStack item = handle.inventoryChest.getItem(0);
 		boolean isSaddled = item != null && CraftMagicNumbers.getId(item.getItem()) == 329;
 		
-		// handle.cs(): is saddled?
+		// handle.cs(): is saddled? play sound only if it wasn't saddled before (handle.cu())
+		// and wasn't loaded into memory right now
 		if (isSaddled && !handle.cu() && handle.ticksLived > 20) {
 			handle.makeSound("mob.horse.leather", 0.5F, 1.0F);
 		}
@@ -106,11 +126,14 @@ public class NMSWrapper {
 		handle.n(isSaddled);
 	}
 
+	/**
+	 * Reset inventory to a normal donkey inventory.
+	 */
 	public static void unsetLargeDonkeyChest(Horse horse) {
-		horse.getInventory().clear(); // just in case, could another player be looking at the old inventory?
+		horse.getInventory().clear(); // just in case, another player could be looking at the old inventory
 		
 		EntityHorse handle = ((CraftHorse)horse).getHandle();
-		handle.inventoryChest = null; // loadChest needs this
+		handle.inventoryChest = null; // loadChest needs this, takes care of the rest
 		handle.loadChest();
 	}
 }
