@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
+import org.bukkit.entity.Horse.Variant;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -121,10 +122,6 @@ public class Burricos extends JavaPlugin implements Listener{
 		if (!(event.getRightClicked() instanceof Horse)) {
 			return;
 		}
-		Horse horse = (Horse) event.getRightClicked();
-		if (!horse.isTamed() || horse.isCarryingChest()) {
-			return;
-		}
 		
 		ItemStack chestItem = event.getPlayer().getItemInHand();
 		if (chestItem.getType() != Material.CHEST
@@ -132,6 +129,12 @@ public class Burricos extends JavaPlugin implements Listener{
 				|| chestItem.getItemMeta().getLore().size() != 1
 				|| !chestItem.getItemMeta().getLore().get(0).equals(UPGRADE_ITEM_LORE)) {
 			// must be used with a chest with exactly that lore, from a Factory or something
+			return;
+		}
+		
+		Horse horse = (Horse) event.getRightClicked();
+		Variant variant = horse.getVariant();
+		if ((variant != Horse.Variant.DONKEY && variant != Horse.Variant.MULE) || !horse.isTamed() || horse.isCarryingChest()) {
 			return;
 		}
 		
