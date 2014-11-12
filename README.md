@@ -22,3 +22,7 @@ Expand donkey inventories to the capability of a double chest, 54 slots instead 
 The donkey's 17 slot inventory is replaced by a 54 slot inventory. When a donkey-entity is saved to disk, the inventory is "zipped" into the NBT of one chest item, inventory is restablished to regular with only the "zip" item. When the entity is loaded into memory again, the single item is "unzipped" into a 54 slot inventory again.
 
 It is necessary to also have a plugin that kicks players off vehicles (at least donkeys) on logout, such as Humbug. Expanded donkey inventories may be lost beyond slot 17 if the server crashes without kicking players properly and a player was mounting the donkey.
+
+## Warning
+
+In the case of the server *crashing hard*, the extended inventory will not be "zipped", so all items beyond slot 15 will most likely be lost. You as a player should think of Burricos as a way to transport large quantities of items, but *never* as a storage option.
