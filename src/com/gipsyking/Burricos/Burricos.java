@@ -107,11 +107,21 @@ public class Burricos extends JavaPlugin implements Listener{
 		if (horse.getInventory().getSize() != 54) {
 			// it's not an upgraded donkey, return but check if needs unzipping
 			if (unzip(horse)) {
-				// this could happen if Humbug does not kick a player off a donkey for
-				// some reason (anything but PlayerQuitEvent: server stop for example)
-				// or if there is a bug. Also happens when a donkey goes through an
-				// end portal.
+				// This will happen if a donkey was not "unzipped" properly. If humbug
+				// doesn't kick player off on logout, if there is a bug in this plugin,
+				// if the server crashes, or a donkey went through an end portal.
+				// Unzip now and schedule opening of the container so that
+				// bukkit/the server reflects the inventory to the
+				// player correctly.
 				logger.warning(event.getPlayer().getName() + " tried to open a zipped donkey, unzipped donkey and cancelled event");
+				final Player player = (Player) event.getPlayer();
+				final Horse finalHorse = horse;
+				getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+					@Override
+					public void run() {
+						NMSWrapper.openDonkeyContainer(player, finalHorse);
+					}
+				});
 				event.setCancelled(true);
 			}
 			return;

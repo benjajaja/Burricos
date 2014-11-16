@@ -3,26 +3,20 @@ Burricos
 
 ![Donkey](http://images.wikia.com/adventuretimewithfinnandjake/images/9/95/Donkey.png)
 
-Expand donkey inventories to the capability of a double chest, 54 slots instead of 15, without external storage
+Expand donkey inventories to the capability of a double chest, 54 slots instead of 15, without external storage. One slot is reserved for the saddle so the effective number of slots is actually 53.
 
 ## Usage
 
 * Fabricate a chest item with `Donkey double chest` as lore, for example with [FactoryMod](https://github.com/Civcraft/FactoryMod) "Animal husbandry" factory and "Donky double chest" recipe.
-* Click on tamed, unchested donkey
+* Click on a tamed, unchested donkey
 * Open donkey, should now have 54 inventory slots instead of the regular 15
-* You can saddle it by placing a saddle in the first slot of inventory
+* It will always have a saddle in it's first slot, which cannot be removed.
 
 ## Features
 
 * Does not use any kind of external storage, only NMS methods and NBTs
-* Donkeys drop loot normally (except the lored chest)
+* Donkeys drop loot normally (including lore'd chest)
 
 ## Internals
 
-The donkey's 17 slot inventory is replaced by a 54 slot inventory. When a donkey-entity is saved to disk, the inventory is "zipped" into the NBT of one chest item, inventory is restablished to regular with only the "zip" item. When the entity is loaded into memory again, the single item is "unzipped" into a 54 slot inventory again.
-
-It is necessary to also have a plugin that kicks players off vehicles (at least donkeys) on logout, such as Humbug. Expanded donkey inventories may be lost beyond slot 17 if the server crashes without kicking players properly and a player was mounting the donkey.
-
-## Warning
-
-In the case of the server *crashing hard*, the extended inventory will not be "zipped", so all items beyond slot 15 will most likely be lost. You as a player should think of Burricos as a way to transport large quantities of items, but *never* as a storage option.
+The donkey's 15 slot (+ 1 saddle + 1 armor) inventory is replaced by a 54 slot inventory. When a player interacts with the donley's inventory, it is "zipped" into the NBT of the donkey's saddle item. After being saved to disk on server stop, chunk unload or player logout, later when the entity is loaded into memory again, the single item is "unzipped" into a 54 slot inventory.
