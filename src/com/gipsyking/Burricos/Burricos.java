@@ -1,5 +1,7 @@
 package com.gipsyking.Burricos;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.bukkit.Material;
@@ -11,21 +13,27 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.HorseInventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class Burricos extends JavaPlugin implements Listener{
 	
 	static Logger logger;
 	
-	private static final int ZIP_SLOT = 2; // slots 0 and 1 are saddle and armor, 2 is the first normal slot
-	public static final String ZIP_LORE = "Donkey.zip"; // a player should never get to see this, but just in case
+	public static final int ZIP_SLOT = 0; // slots 0 and 1 are saddle and armor respectively
+	public static final String ZIP_NAME = "Saddle";
+	public static final String ZIP_LORE = "with donkey double chest";
 	public static final String UPGRADE_ITEM_LORE = "Donkey double chest";
+
 
 	/**
 	 * When plugin is loaded, some donkeys that are supposed to be extended
@@ -60,15 +68,16 @@ public class Burricos extends JavaPlugin implements Listener{
 	 * player" instead of the chunk, but Humbug kicks off players from all
 	 * vehicles, so this isn't an issue.
 	 * Note: this is not the same as a server crash, in that event all extended
-	 * donkey inventories will lose items beyond slot 17, and possibly the
-	 * first and second slot.
+	 * donkey inventories will be restored to how they were when the world was
+	 * last saved, just like everything else.
 	 */
 	public void onDisable() {
 		int count = 0;
 		// if the server crashes hard then donkey inv is partially lost (starting from slot 17), no way around that
 		for (World world: this.getServer().getWorlds()) {
 			for (Horse horse: world.getEntitiesByClass(Horse.class)) {
-				if (zip(horse)) {
+				if (horse.isCarryingChest() && horse.getInventory().getSize() == 54) {
+					zip(horse, false);
 					count++;
 				}
 			}
@@ -100,7 +109,8 @@ public class Burricos extends JavaPlugin implements Listener{
 			if (unzip(horse)) {
 				// this could happen if Humbug does not kick a player off a donkey for
 				// some reason (anything but PlayerQuitEvent: server stop for example)
-				// or if there is a bug.
+				// or if there is a bug. Also happens when a donkey goes through an
+				// end portal.
 				logger.warning(event.getPlayer().getName() + " tried to open a zipped donkey, unzipped donkey and cancelled event");
 				event.setCancelled(true);
 			}
@@ -108,14 +118,38 @@ public class Burricos extends JavaPlugin implements Listener{
 		}
 		
 		event.setCancelled(true);
-		// sadly, this will do nothing while riding a donkey:
+		// the following InventoryOpenEvent will be prevented by Humbug while riding a donkey:
 		NMSWrapper.openDonkeyContainer((Player) event.getPlayer(), horse);
 	}
 	
 	/**
-	 * Set donkey to extended donkey if it is clicked with the special chest
+	 * save inventory to "zip" saddle item on any click interaction
+	 */
+	@EventHandler(priority = EventPriority.NORMAL)
+	public void inventoryInteractEvent(InventoryClickEvent event) {
+		if (event.getInventory().getSize() != 54) {
+			return;
+		}
+		InventoryHolder holder = event.getInventory().getHolder();
+		
+		if (holder == null || !(holder instanceof Horse) || !((Horse)holder).isCarryingChest()) {
+			return;
+		}
+		
+		// now it is an extended donkey inventory
+		
+		ItemStack item = event.getCurrentItem();
+		if (isZipItem(item)) {
+			event.setCancelled(true);
+			return;
+		}
+		
+		zip((Horse) holder, false);
+	}
+	
+	/**
+	 * Set donkey to extended donkey if it is clicked with chest with upgrade-lore
 	 * and it is tame and not already chested.
-	 * Attempt to copy existing inventory (could only contain a saddle).
 	 */
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void setDonkeyDoubleChestEvent(PlayerInteractEntityEvent event) {
@@ -128,16 +162,16 @@ public class Burricos extends JavaPlugin implements Listener{
 				|| chestItem.getItemMeta().getLore() == null
 				|| chestItem.getItemMeta().getLore().size() != 1
 				|| !chestItem.getItemMeta().getLore().get(0).equals(UPGRADE_ITEM_LORE)) {
-			// must be used with a chest with exactly that lore, from a Factory or something
+			// must be used with a chest with exactly that lore, from a Factory or drop
 			return;
 		}
 		
 		Horse horse = (Horse) event.getRightClicked();
 		Variant variant = horse.getVariant();
-		if ((variant != Horse.Variant.DONKEY && variant != Horse.Variant.MULE) || !horse.isTamed() || horse.isCarryingChest()) {
+		if ((variant != Horse.Variant.DONKEY && variant != Horse.Variant.MULE) || !horse.isTamed() || horse.isCarryingChest()
+				|| horse.getInventory().getItem(ZIP_SLOT) != null) {
 			return;
 		}
-		
 		
 		event.setCancelled(true);
 		horse.setCarryingChest(true);
@@ -145,13 +179,45 @@ public class Burricos extends JavaPlugin implements Listener{
 		
 		HorseInventory inventory = horse.getInventory();
 		NMSWrapper.setLargeDonkeyChest(horse);
-		// copy items over, if donkey already had some. Can only contain saddle actually.
-		for (int i = 0; i < inventory.getSize(); i++) {
-			if (inventory.getItem(i) != null) {
-				horse.getInventory().setItem(i, inventory.getItem(i).clone());
-			}
-		}
+		zip(horse, false);
 		inventory.clear(); // just in case, another player could be looking at the old inventory
+	}
+	
+	/**
+	 * Natural drops include the saddle "zip" item, one chest, and inventory contents.
+	 * Remove "zip" saddle item, add upgrade lore on one chest only (there might be
+	 * more chests in the inventory).
+	 */
+	@EventHandler(priority = EventPriority.NORMAL)
+	public void adjustDonkeyDrop(EntityDeathEvent event) {
+		Entity entity = event.getEntity();
+		if (!(entity instanceof Horse)) {
+			return;
+		}
+		
+		Horse horse = (Horse) entity;
+		Variant variant = horse.getVariant();
+		if ((variant != Horse.Variant.DONKEY && variant != Horse.Variant.MULE) || horse.getInventory().getSize() != 54) {
+			// horse.isCarryingChest is false at this point, maybe because it's dead
+			return;
+		}
+		
+		List<ItemStack> drops = event.getDrops();
+		ItemStack item;
+		int i = drops.size() - 1;
+		boolean isChestUpgraded = false;
+		while (i >= 0) {
+			item = drops.get(i);
+			if (isZipItem(item)) {
+				drops.remove(i);
+			} else if (!isChestUpgraded && item.getType() == Material.CHEST && item.getItemMeta().getLore() == null) {
+				ItemMeta meta = item.getItemMeta();
+				meta.setLore(Arrays.asList(new String[]{UPGRADE_ITEM_LORE}));
+				item.setItemMeta(meta);
+				isChestUpgraded = true;
+			}
+			--i;
+		}
 	}
 	
 	/**
@@ -159,7 +225,7 @@ public class Burricos extends JavaPlugin implements Listener{
 	 * including all entities it contains.
 	 * In the case of an extended donkey, all items beyond slot 17 would get
 	 * lost. So we "zip" the contents of the extended inventory into the NBT
-	 * of a single item, which is preserved.
+	 * of the saddle item, which is preserved.
 	 */
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onChunkUnLoaded(ChunkUnloadEvent event) {
@@ -167,7 +233,7 @@ public class Burricos extends JavaPlugin implements Listener{
 			if (entity instanceof Horse) {
 				Horse horse = (Horse) entity;
 				if (horse.isCarryingChest() && horse.getInventory().getSize() == 54) {
-					zip(horse);
+					zip(horse, true);
 				}
 			}
 		}
@@ -176,7 +242,7 @@ public class Burricos extends JavaPlugin implements Listener{
 	/**
 	 * When a chunk is loaded, all entities it contains are also loaded into
 	 * memory. This is where we recover extended donkeys inventories from the
-	 * "zip" item's NBT, if present.
+	 * "zip" saddle item's NBT, if present.
 	 */
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onChunkLoaded(ChunkLoadEvent event) {
@@ -191,36 +257,40 @@ public class Burricos extends JavaPlugin implements Listener{
 	}
 
 	/**
-	 * Serialize the inventory of the donkey into an item, clear donkey
-	 * inventory, and add only the item. This will be saved to disk
-	 * successfully.
+	 * Serialize the inventory of the donkey into the saddle item.
+	 * If `unsetLargeDonkeyChest` is true, the inventory is reset to a regular
+	 * chested donkey inventory.
 	 */
-	private boolean zip(Horse horse) {
-		if (horse.isCarryingChest() && horse.getInventory().getSize() == 54) {
-			ItemStack contents = NMSWrapper.zip(horse.getInventory().getContents());
+	private void zip(Horse horse, boolean unsetLargeDonkeyChest) {
+		ItemStack contents = NMSWrapper.zip(horse.getInventory().getContents(), horse.getInventory().getItem(ZIP_SLOT));
+		if (unsetLargeDonkeyChest) {
 			NMSWrapper.unsetLargeDonkeyChest(horse);
-			horse.getInventory().setItem(ZIP_SLOT, contents);
-			return true;
 		}
-		return false;
+		horse.getInventory().setItem(ZIP_SLOT, contents);
 	}
 
-	/*
+	/**
 	 * If a donkey contains an item that matches the "zip" item lore at the
 	 * predefined slot, it is a "zipped" donkey: set inventory to extended and
 	 * "unzip" the item to it.
 	 */
 	private boolean unzip(Horse horse) {
 		ItemStack zip = horse.getInventory().getItem(ZIP_SLOT);
-		if (zip != null
-				&& zip.getItemMeta() != null
-				&& zip.getItemMeta().getLore() != null
-				&& zip.getItemMeta().getLore().size() == 1
-				&& zip.getItemMeta().getLore().get(0).equals(ZIP_LORE)) {
+		if (zip != null && isZipItem(zip)) {
 			NMSWrapper.setLargeDonkeyChest(horse);
 			NMSWrapper.unzip(zip, horse.getInventory());
 			return true;
 		}
 		return false;
+	}
+	
+	/**
+	 * Return true if item is a "zip" item
+	 */
+	private boolean isZipItem(ItemStack item) {
+		return item.getItemMeta() != null
+			&& item.getItemMeta().getLore() != null
+			&& item.getItemMeta().getLore().size() == 1
+			&& item.getItemMeta().getLore().get(0).equals(ZIP_LORE);
 	}
 }
