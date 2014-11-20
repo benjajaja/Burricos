@@ -1,5 +1,6 @@
 package com.gipsyking.Burricos;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -9,6 +10,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Horse.Variant;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -135,7 +137,7 @@ public class Burricos extends JavaPlugin implements Listener{
 	 * save inventory to "zip" saddle item on any click interaction
 	 */
 	@EventHandler(priority = EventPriority.NORMAL)
-	public void inventoryInteractEvent(InventoryClickEvent event) {
+	public void inventoryClickEvent(InventoryClickEvent event) {
 		if (event.getInventory().getSize() != 54) {
 			return;
 		}
@@ -206,24 +208,39 @@ public class Burricos extends JavaPlugin implements Listener{
 		
 		Horse horse = (Horse) entity;
 		Variant variant = horse.getVariant();
-		if ((variant != Horse.Variant.DONKEY && variant != Horse.Variant.MULE) || horse.getInventory().getSize() != 54) {
+		if (variant != Horse.Variant.DONKEY && variant != Horse.Variant.MULE) {
 			// horse.isCarryingChest is false at this point, maybe because it's dead
 			return;
+		}
+		
+		// must copy viewers to avoid ConcurrentModificationException, can't use Iterator either
+		ArrayList<HumanEntity> viewers = new ArrayList<HumanEntity>(horse.getInventory().getViewers());
+		for (HumanEntity player: viewers) {
+			// minecraft closes invs of player viewing a donkey that died too
+			player.closeInventory();
 		}
 		
 		List<ItemStack> drops = event.getDrops();
 		ItemStack item;
 		int i = drops.size() - 1;
-		boolean isChestUpgraded = false;
+		boolean mayDropUpgradeItem = horse.getInventory().getSize() == 54;
+		boolean hasRemovedZipItem = false;
 		while (i >= 0) {
 			item = drops.get(i);
 			if (isZipItem(item)) {
 				drops.remove(i);
-			} else if (!isChestUpgraded && item.getType() == Material.CHEST && item.getItemMeta().getLore() == null) {
+				if (!mayDropUpgradeItem) {
+					break;
+				}
+				hasRemovedZipItem = true;
+			} else if (mayDropUpgradeItem && item.getType() == Material.CHEST && item.getItemMeta().getLore() == null) {
 				ItemMeta meta = item.getItemMeta();
 				meta.setLore(Arrays.asList(new String[]{UPGRADE_ITEM_LORE}));
 				item.setItemMeta(meta);
-				isChestUpgraded = true;
+				if (hasRemovedZipItem) {
+					break;
+				}
+				mayDropUpgradeItem = false;
 			}
 			--i;
 		}
