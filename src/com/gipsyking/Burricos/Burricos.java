@@ -73,11 +73,10 @@ public class Burricos extends JavaPlugin implements Listener{
 	 */
 	public void onDisable() {
 		int count = 0;
-		// if the server crashes hard then donkey inv is partially lost (starting from slot 17), no way around that
 		for (World world: this.getServer().getWorlds()) {
 			for (Horse horse: world.getEntitiesByClass(Horse.class)) {
 				if (horse.isCarryingChest() && horse.getInventory().getSize() == 54) {
-					zip(horse, false);
+					zip(horse, true);
 					count++;
 				}
 			}
