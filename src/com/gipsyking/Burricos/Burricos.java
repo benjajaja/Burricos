@@ -186,7 +186,12 @@ public class Burricos extends JavaPlugin implements Listener{
 		
 		event.setCancelled(true);
 		horse.setCarryingChest(true);
-		chestItem.setAmount(chestItem.getAmount() - 1);
+		if (chestItem.getAmount() > 1) {
+			chestItem.setAmount(chestItem.getAmount() - 1);
+		} else {
+			event.getPlayer().getInventory().remove(chestItem);
+		}
+		event.getPlayer().updateInventory();
 		
 		HorseInventory inventory = horse.getInventory();
 		NMSWrapper.setLargeDonkeyChest(horse);
