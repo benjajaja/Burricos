@@ -95,11 +95,17 @@ public class Burricos extends JavaPlugin implements Listener{
 	 * style. The opening of the custom view will fire another event that is
 	 * not cancelled (by this plugin).
 	 */
-	@EventHandler(priority = EventPriority.NORMAL)
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void inventoryOpenEvent(InventoryOpenEvent event) {
-		if (!(event.getInventory() instanceof HorseInventory)) {
+		if (!NMSWrapper.isHorseInventory(event.getInventory())) {
 			return;
 		}
+		
+		if (event.getPlayer().isInsideVehicle()) {
+			event.setCancelled(true);
+			return;
+		}
+		
 		Horse horse = (Horse) event.getInventory().getHolder();
 		if (!((Horse)event.getInventory().getHolder()).isCarryingChest()) {
 			return;
@@ -136,7 +142,7 @@ public class Burricos extends JavaPlugin implements Listener{
 	/**
 	 * save inventory to "zip" saddle item on any click interaction
 	 */
-	@EventHandler(priority = EventPriority.NORMAL)
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void inventoryClickEvent(InventoryClickEvent event) {
 		if (event.getInventory().getSize() != 54) {
 			return;
@@ -162,7 +168,7 @@ public class Burricos extends JavaPlugin implements Listener{
 	 * Set donkey to extended donkey if it is clicked with chest with upgrade-lore
 	 * and it is tame and not already chested.
 	 */
-	@EventHandler(priority = EventPriority.NORMAL)
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void setDonkeyDoubleChestEvent(PlayerInteractEntityEvent event) {
 		if (!(event.getRightClicked() instanceof Horse)) {
 			return;
@@ -179,14 +185,24 @@ public class Burricos extends JavaPlugin implements Listener{
 		
 		Horse horse = (Horse) event.getRightClicked();
 		Variant variant = horse.getVariant();
-		if ((variant != Horse.Variant.DONKEY && variant != Horse.Variant.MULE) || !horse.isTamed() || horse.isCarryingChest()
-				|| horse.getInventory().getItem(ZIP_SLOT) != null) {
+		if ((variant != Horse.Variant.DONKEY && variant != Horse.Variant.MULE) || !horse.isTamed() || horse.isCarryingChest()) {
+			return;
+		}
+		if (horse.getInventory().getItem(ZIP_SLOT) != null) {
+			event.setCancelled(true); // player is clicking with a lore chest on a donkey with saddle, avoid wasting his item as normal chest
+			event.getPlayer().updateInventory();
 			return;
 		}
 		
+		
 		event.setCancelled(true);
 		horse.setCarryingChest(true);
-		chestItem.setAmount(chestItem.getAmount() - 1);
+		if (chestItem.getAmount() > 1) {
+			chestItem.setAmount(chestItem.getAmount() - 1);
+		} else {
+			event.getPlayer().getInventory().remove(chestItem);
+		}
+		event.getPlayer().updateInventory();
 		
 		HorseInventory inventory = horse.getInventory();
 		NMSWrapper.setLargeDonkeyChest(horse);
@@ -199,7 +215,7 @@ public class Burricos extends JavaPlugin implements Listener{
 	 * Remove "zip" saddle item, add upgrade lore on one chest only (there might be
 	 * more chests in the inventory).
 	 */
-	@EventHandler(priority = EventPriority.NORMAL)
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void adjustDonkeyDrop(EntityDeathEvent event) {
 		Entity entity = event.getEntity();
 		if (!(entity instanceof Horse)) {

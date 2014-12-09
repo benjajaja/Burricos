@@ -10,10 +10,12 @@ import net.minecraft.server.v1_7_R4.ItemStack;
 
 import org.bukkit.craftbukkit.v1_7_R4.entity.CraftHorse;
 import org.bukkit.craftbukkit.v1_7_R4.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_7_R4.inventory.CraftInventoryHorse;
 import org.bukkit.craftbukkit.v1_7_R4.inventory.CraftItemStack;
 import org.bukkit.Material;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.HorseInventory;
 import org.bukkit.inventory.Inventory;
 
 
@@ -112,5 +114,9 @@ public class NMSWrapper {
 		EntityHorse handle = ((CraftHorse)horse).getHandle();
 		handle.inventoryChest = null; // loadChest needs this, takes care of the rest
 		handle.loadChest();
+	}
+
+	public static boolean isHorseInventory(Inventory inventory) {
+		return (inventory instanceof HorseInventory) || (inventory instanceof CraftInventoryHorse);
 	}
 }
