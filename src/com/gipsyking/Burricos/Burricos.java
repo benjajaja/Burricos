@@ -101,11 +101,6 @@ public class Burricos extends JavaPlugin implements Listener{
 			return;
 		}
 		
-		if (event.getPlayer().isInsideVehicle()) {
-			event.setCancelled(true);
-			return;
-		}
-		
 		Horse horse = (Horse) event.getInventory().getHolder();
 		if (!((Horse)event.getInventory().getHolder()).isCarryingChest()) {
 			return;
@@ -189,7 +184,7 @@ public class Burricos extends JavaPlugin implements Listener{
 			return;
 		}
 		if (horse.getInventory().getItem(ZIP_SLOT) != null) {
-			event.setCancelled(true); // player is clicking with a lore chest on a donkey with saddle, avoid wasting his item as normal chest
+			event.setCancelled(true); // player is clicking with a lore chest on a donkey with saddle, avoid wasting his saddle or his lore chest as normal chest
 			event.getPlayer().updateInventory();
 			return;
 		}
