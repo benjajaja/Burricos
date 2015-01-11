@@ -151,7 +151,7 @@ public class Burricos extends JavaPlugin implements Listener{
 		// now it is an extended donkey inventory
 		
 		ItemStack item = event.getCurrentItem();
-		if (isZipItem(item)) {
+		if (item != null && isZipItem(item)) {
 			event.setCancelled(true);
 			return;
 		}
