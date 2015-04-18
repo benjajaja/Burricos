@@ -40,4 +40,8 @@ public class ClassHandler {
 	public NMSWrapperInterface getNMSWrapper() {
 		return (NMSWrapperInterface) getObject(NMSWrapperInterface.class, "NMSWrapper");
 	}
+
+	public String getVersion() {
+		return version;
+	}
 }

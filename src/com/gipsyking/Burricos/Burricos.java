@@ -49,7 +49,10 @@ public class Burricos extends JavaPlugin implements Listener{
 	 */
 	public void onEnable(){
 		Burricos.logger = getLogger();
-		ClassHandler.Initialize(Bukkit.getServer());
+		if (!ClassHandler.Initialize(Bukkit.getServer())) {
+			logger.severe("Cannot load NBT wrapper for server version: " + ClassHandler.ch.getVersion());
+			return;
+		}
 		this.nmsWrapper = ClassHandler.ch.getNMSWrapper();
 		this.getServer().getPluginManager().registerEvents(this, this);
 		
