@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -27,6 +28,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.gipsyking.Burricos.misc.ClassHandler;
+
 public class Burricos extends JavaPlugin implements Listener{
 	
 	static Logger logger;
@@ -36,6 +39,8 @@ public class Burricos extends JavaPlugin implements Listener{
 	public static final String ZIP_LORE = "with donkey double chest";
 	public static final String UPGRADE_ITEM_LORE = "Donkey double chest";
 
+	private NMSWrapperInterface nmsWrapper;
+
 
 	/**
 	 * When plugin is loaded, some donkeys that are supposed to be extended
@@ -44,6 +49,8 @@ public class Burricos extends JavaPlugin implements Listener{
 	 */
 	public void onEnable(){
 		Burricos.logger = getLogger();
+		ClassHandler.Initialize(Bukkit.getServer());
+		this.nmsWrapper = ClassHandler.ch.getNMSWrapper();
 		this.getServer().getPluginManager().registerEvents(this, this);
 		
 		// there may be chunks and entities loaded at this time, and on top of that the may *never* fire ChunkLoadEvent (spawn area)
@@ -97,7 +104,7 @@ public class Burricos extends JavaPlugin implements Listener{
 	 */
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void inventoryOpenEvent(InventoryOpenEvent event) {
-		if (!NMSWrapper.isHorseInventory(event.getInventory())) {
+		if (!nmsWrapper.isHorseInventory(event.getInventory())) {
 			return;
 		}
 		
@@ -121,7 +128,7 @@ public class Burricos extends JavaPlugin implements Listener{
 				getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
 					@Override
 					public void run() {
-						NMSWrapper.openDonkeyContainer(player, finalHorse);
+						nmsWrapper.openDonkeyContainer(player, finalHorse);
 					}
 				});
 				event.setCancelled(true);
@@ -131,7 +138,7 @@ public class Burricos extends JavaPlugin implements Listener{
 		
 		event.setCancelled(true);
 		// the following InventoryOpenEvent will be prevented by Humbug while riding a donkey:
-		NMSWrapper.openDonkeyContainer((Player) event.getPlayer(), horse);
+		nmsWrapper.openDonkeyContainer((Player) event.getPlayer(), horse);
 	}
 	
 	/**
@@ -200,7 +207,7 @@ public class Burricos extends JavaPlugin implements Listener{
 		event.getPlayer().updateInventory();
 		
 		HorseInventory inventory = horse.getInventory();
-		NMSWrapper.setLargeDonkeyChest(horse);
+		nmsWrapper.setLargeDonkeyChest(horse);
 		zip(horse, false);
 		inventory.clear(); // just in case, another player could be looking at the old inventory
 	}
@@ -299,9 +306,9 @@ public class Burricos extends JavaPlugin implements Listener{
 	 * chested donkey inventory.
 	 */
 	private void zip(Horse horse, boolean unsetLargeDonkeyChest) {
-		ItemStack contents = NMSWrapper.zip(horse.getInventory().getContents(), horse.getInventory().getItem(ZIP_SLOT));
+		ItemStack contents = nmsWrapper.zip(horse.getInventory().getContents(), horse.getInventory().getItem(ZIP_SLOT));
 		if (unsetLargeDonkeyChest) {
-			NMSWrapper.unsetLargeDonkeyChest(horse);
+			nmsWrapper.unsetLargeDonkeyChest(horse);
 		}
 		horse.getInventory().setItem(ZIP_SLOT, contents);
 	}
@@ -314,8 +321,8 @@ public class Burricos extends JavaPlugin implements Listener{
 	private boolean unzip(Horse horse) {
 		ItemStack zip = horse.getInventory().getItem(ZIP_SLOT);
 		if (zip != null && isZipItem(zip)) {
-			NMSWrapper.setLargeDonkeyChest(horse);
-			NMSWrapper.unzip(zip, horse.getInventory());
+			nmsWrapper.setLargeDonkeyChest(horse);
+			nmsWrapper.unzip(zip, horse.getInventory());
 			return true;
 		}
 		return false;

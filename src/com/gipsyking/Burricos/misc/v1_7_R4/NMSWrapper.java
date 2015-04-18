@@ -1,4 +1,4 @@
-package com.gipsyking.Burricos;
+package com.gipsyking.Burricos.misc.v1_7_R4;
 
 // all the cancer, at least it's in one place
 import net.minecraft.server.v1_7_R4.EntityHorse;
@@ -18,13 +18,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.HorseInventory;
 import org.bukkit.inventory.Inventory;
 
+import com.gipsyking.Burricos.Burricos;
+import com.gipsyking.Burricos.NMSWrapperInterface;
 
-public class NMSWrapper {
 
-	/**
-	 * "zip" an inventory array into the NBT of a single item. If item is null a new item will be created.
+public class NMSWrapper implements NMSWrapperInterface {
+
+	/* (non-Javadoc)
+	 * @see com.gipsyking.Burricos.NMSWrapperInterface#zip(org.bukkit.inventory.ItemStack[], org.bukkit.inventory.ItemStack)
 	 */
-	public static org.bukkit.inventory.ItemStack zip(org.bukkit.inventory.ItemStack[] stacks, org.bukkit.inventory.ItemStack zipItem) {
+	@Override
+	public org.bukkit.inventory.ItemStack zip(org.bukkit.inventory.ItemStack[] stacks, org.bukkit.inventory.ItemStack zipItem) {
 		ItemStack nmsStack;
 		NBTTagCompound tag;
 
@@ -60,10 +64,11 @@ public class NMSWrapper {
 		return CraftItemStack.asCraftMirror(nmsStack);
 	}
 
-	/**
-	 * Unzip a "zip" item into an inventory. The "zip" item itself will be add to the inventory too.
+	/* (non-Javadoc)
+	 * @see com.gipsyking.Burricos.NMSWrapperInterface#unzip(org.bukkit.inventory.ItemStack, org.bukkit.inventory.Inventory)
 	 */
-	public static void unzip(org.bukkit.inventory.ItemStack itemStack, Inventory inventory) {
+	@Override
+	public void unzip(org.bukkit.inventory.ItemStack itemStack, Inventory inventory) {
 		ItemStack nmsItemStack = CraftItemStack.asNMSCopy(itemStack);
 		if (nmsItemStack == null) {
 			return;
@@ -89,26 +94,28 @@ public class NMSWrapper {
 		inventory.setItem(Burricos.ZIP_SLOT, itemStack);
 	}
 
-	/**
-	 * Open a custom view of a horse inventory to the player, to show a simple
-	 * inventory view instead of the custom horse UI.
+	/* (non-Javadoc)
+	 * @see com.gipsyking.Burricos.NMSWrapperInterface#openDonkeyContainer(org.bukkit.entity.Player, org.bukkit.entity.Horse)
 	 */
-	public static void openDonkeyContainer(Player player, Horse horse) {
+	@Override
+	public void openDonkeyContainer(Player player, Horse horse) {
 		((CraftPlayer)player).getHandle().openContainer(((CraftHorse)horse).getHandle().inventoryChest);
 	}
 
-	/**
-	 * Replace horse's inventory reference with a new larger inventory.
+	/* (non-Javadoc)
+	 * @see com.gipsyking.Burricos.NMSWrapperInterface#setLargeDonkeyChest(org.bukkit.entity.Horse)
 	 */
-	public static void setLargeDonkeyChest(Horse horse) {
+	@Override
+	public void setLargeDonkeyChest(Horse horse) {
 		final EntityHorse handle = ((CraftHorse)horse).getHandle();
 		handle.inventoryChest = new InventoryHorseChest("Burrico", 54, handle);
 	}
 
-	/**
-	 * Reset inventory to a normal donkey inventory.
+	/* (non-Javadoc)
+	 * @see com.gipsyking.Burricos.NMSWrapperInterface#unsetLargeDonkeyChest(org.bukkit.entity.Horse)
 	 */
-	public static void unsetLargeDonkeyChest(Horse horse) {
+	@Override
+	public void unsetLargeDonkeyChest(Horse horse) {
 		horse.getInventory().clear(); // just in case, another player could be looking at the old inventory
 		
 		EntityHorse handle = ((CraftHorse)horse).getHandle();
@@ -116,7 +123,11 @@ public class NMSWrapper {
 		handle.loadChest();
 	}
 
-	public static boolean isHorseInventory(Inventory inventory) {
+	/* (non-Javadoc)
+	 * @see com.gipsyking.Burricos.NMSWrapperInterface#isHorseInventory(org.bukkit.inventory.Inventory)
+	 */
+	@Override
+	public boolean isHorseInventory(Inventory inventory) {
 		return (inventory instanceof HorseInventory) || (inventory instanceof CraftInventoryHorse);
 	}
 }
