@@ -205,7 +205,7 @@ public class Burricos extends JavaPlugin implements Listener{
 		if (chestItem.getAmount() > 1) {
 			chestItem.setAmount(chestItem.getAmount() - 1);
 		} else {
-			event.getPlayer().getInventory().remove(chestItem);
+			event.getPlayer().getInventory().clear(event.getPlayer().getInventory().getHeldItemSlot());
 		}
 		event.getPlayer().updateInventory();
 		
