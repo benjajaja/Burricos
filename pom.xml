@@ -6,7 +6,7 @@
   <groupId>com.gipsyking.Burricos</groupId>
   <artifactId>Burricos</artifactId>
   <packaging>jar</packaging>
-  <version>1.6-SNAPSHOT</version>
+  <version>1.7-SNAPSHOT</version>
   <name>Burricos</name>
   <url>https://github.com/gipsy-king/Burricos</url>
    
@@ -33,19 +33,13 @@
 	<dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>craftbukkit</artifactId>
-      <version>1.7.10-R0.1</version>
+      <version>1.8.7-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot</artifactId>
-      <version>1.8-R0.1</version>
-      <scope>provided</scope>
-    </dependency>
-	<dependency>
-      <groupId>org.spigotmc</groupId>
-      <artifactId>Spigot1.8.3</artifactId>
-      <version>1.8.3</version>
+      <version>1.8.7-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
