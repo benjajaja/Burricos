@@ -1,4 +1,4 @@
-package com.gipsyking.Burricos.misc.v1_8_7_R1;
+package com.gipsyking.Burricos.misc.v1_8_R3;
 
 // all the cancer, at least it's in one place
 import net.minecraft.server.v1_8_R3.EntityHorse;
